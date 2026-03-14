@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCS Treasure Chest | Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="login-card" id="loginCard"> 
+        <div class="icon-container">
+            <i class="fas fa-gem" style="font-size: 3.5rem; color: #f28d4f;"></i>
+        </div>
+
+        <h1>CCS ARCHIVE</h1>
+        <p class="subtitle">Secure Academic Repository</p>
+
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username">Username / Student ID</label>
+                <input id="username" type="text" placeholder="e.g. 2024-1001" required>
+            </div>
+
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input id="password" type="password" placeholder="••••••••" required>
+            </div>
+
+            <div class="checkbox-row">
+                <label><input id="showPassword" type="checkbox"> Show Password</label>
+                <label><input id="rememberMe" type="checkbox"> Remember Me</label>
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                <span>Log In</span>
+                <div class="spinner" id="spinner"></div>
+            </button>
+
+            <div id="message" aria-live="polite" style="margin-top:15px; text-align:center; min-height: 20px;"></div>
+        </form>
+
+        <a href="#" class="forgot-link">Forgot Password?</a>
+    </div>
+
+    <script src="SE.js"></script>
+</body>
+</html>

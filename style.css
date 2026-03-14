@@ -1,0 +1,318 @@
+:root {
+    --primary-orange: #f28d4f;
+    --sidebar-text: #d46a2a;
+    --bg-gray: #e0e0e0;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #d59872;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+body.dashboard {
+    display: flex;
+    height: 100vh;
+    background-color: var(--bg-gray);
+}
+
+.login-card {
+    background-color: #fceade; 
+    width: 400px;
+    padding: 40px 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    text-align: center;
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.login-card.animate-entry {
+    animation: slideIn 0.6s ease-out forwards;
+}
+
+.login-card.shake {
+    animation: shake 0.45s ease-in-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-10px); }
+    40%, 80% { transform: translateX(10px); }
+}
+
+.icon-container img {
+    width: 80px;
+    margin-bottom: 10px;
+}
+
+h1 {
+    color: #e67e22;
+    font-size: 1.8rem;
+    margin-bottom: 5px;
+}
+
+p.subtitle {
+    color: #e67e22;
+    font-size: 0.85rem;
+    font-weight: bold;
+    margin-bottom: 30px;
+}
+
+.input-group {
+    position: relative;
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.input-group label {
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background: #fceade; 
+    padding: 0 5px;
+    font-size: 0.75rem;
+    color: #555;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 20px;
+    border: 2px solid #5a6e7a; 
+    border-radius: 50px;
+    background: white;
+    font-size: 1rem;
+    outline: none;
+    color: #333;
+}
+
+.input-group input::placeholder {
+    color: #bdc3c7;
+}
+
+.checkbox-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    font-size: 0.9rem;
+    color: #5a6e7a;
+}
+
+.checkbox-row label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.checkbox-row input {
+    width: auto;
+    margin: 0;
+}
+
+.login-btn {
+    background-color: #ff9f59;
+    color: white;
+    border: none;
+    padding: 15px;
+    width: 100%;
+    border-radius: 50px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-btn:hover {
+    background-color: #e67e22;
+}
+
+.forgot-link {
+    color: #5a94c5;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.forgot-link:hover {
+    text-decoration: underline;
+}
+
+.spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin-left: 10px;
+}
+
+                   /* Dashboard styles */
+.sidebar {
+    width: 180px; 
+    background-color: white; 
+    display: flex; 
+    flex-direction: column; 
+    padding: 20px 10px;
+    opacity: 0;
+    transform: translateX(-24px);
+}
+
+.sidebar.animate-in {
+    animation: slideInLeft 0.55s ease-out forwards;
+    animation-delay: 0.2s;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: var(--sidebar-text);
+    font-size: 1.1rem;
+    margin-bottom: 25px;
+    gap: 12px;
+}
+
+.nav-item i { font-size: 1.4rem; width: 30px; text-align: center; color: #333; }
+.nav-item span { font-weight: 500; }
+
+.logout { margin-top: auto; }
+
+.main-container { flex-grow: 1; display: flex; flex-direction: column; }
+
+.header-bar {
+    background-color: var(--primary-orange);
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 25px;
+    opacity: 0;
+    transform: translateY(-12px);
+}
+
+.header-bar.animate-in {
+    animation: slideDown 0.55s ease-out forwards;
+    animation-delay: 0.3s;
+}
+
+.logo-area { display: flex; align-items: center; gap: 10px; color: #5a3015; font-size: 1.5rem; }
+.logo-area img { height: 50px; }
+
+.user-area { display: flex; align-items: center; gap: 10px; color: #d46a2a; font-size: 1.3rem; }
+.user-area i { font-size: 2.2rem; color: black; }
+
+.dashboard-content { padding: 30px; opacity: 0; transform: translateY(10px); }
+
+.dashboard-content.animate-in {
+    animation: fadeInUp 0.65s ease-out forwards;
+    animation-delay: 0.35s;
+}
+
+.search-bar-container {
+    background: white;
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    border-radius: 30px;
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 40px;
+}
+
+.search-bar-container i { font-size: 1.5rem; color: #888; margin-right: 15px; }
+.search-bar-container input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 1.2rem;
+}
+
+.section-header {
+    color: #777;
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+}
+
+.placeholder-grid {
+    border: 2px dashed #aaa;
+    border-radius: 15px;
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-style: italic;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    50% { transform: translateX(8px); }
+    75% { transform: translateX(-8px); }
+}
+.shake-effect {
+    animation: shake 0.4s ease-in-out;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

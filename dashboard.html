@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCS Treasure Chest Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard">
+
+    <nav class="sidebar">
+        <a href="#" class="nav-item">
+            <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span>Archive</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span>Update</span>
+        </a>
+
+        <div class="logout">
+            <a href="#" class="nav-item">
+                <span>Log out</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <header class="header-bar">
+            <div class="logo-area">
+                <i class="fa-solid fa-box-open" style="color: #5a3015;"></i>
+                <span>CCS Treasure Chest</span>
+            </div>
+            <div class="user-area">
+                <i class="fa-solid fa-circle-user"></i>
+                <span>Student</span>
+            </div>
+        </header>
+
+        <main class="dashboard-content">
+            <div class="search-bar-container">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Search projects...">
+            </div>
+
+            <h2 class="section-header">Recent Projects</h2>
+            <div class="placeholder-grid">
+            </div>
+        </main>
+    </div>
+
+    <script src="SE.js"></script>
+</body>
+</html>

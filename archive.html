@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCS Archive - Student Vault</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="logo-container">
+            <img src="Archive" alt="CCS Archive" class="main-logo-img">
+            <span class="brand-text">CCS Archive</span>
+        </div>
+        <div class="user-profile">
+            <i class="fa-solid fa-circle-user profile-icon"></i>
+            <span class="user-role">Student</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <nav>
+                <ul>
+                    <li><a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+                    <li class="active"><a href="archive.html"><i class="fa-solid fa-box-archive"></i> Archive</a></li>
+                    <li><a href="upload.html"><i class="fa-solid fa-upload"></i> Upload</a></li>
+                </ul>
+            </nav>
+            <div class="logout-section">
+                <a href="login.html"><i class="fa-solid fa-right-from-bracket"></i> Log out</a>
+            </div>
+        </aside>
+
+        <main class="content">
+            <div class="archive-main-wrapper">
+                <div class="archive-search-container">
+                    <div class="search-input-group">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" class="archive-search-field" placeholder="Search archives...">
+                    </div>
+                </div>
+
+                <div class="archive-title-header">
+                    <h1>My Archive</h1>
+                    <p>All Files in your Archive</p>
+                </div>
+
+                <div class="archive-actions-row">
+                    <button class="archive-btn-orange"><i class="fa-solid fa-download"></i> Download Selection</button>
+                    <button class="archive-btn-orange"><i class="fa-solid fa-pen"></i> Rename</button>
+                </div>
+
+                <div class="archive-display">
+                    <div class="empty-state-box">No Files Uploaded</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="SE.js"></script>
+</body>
+</html>

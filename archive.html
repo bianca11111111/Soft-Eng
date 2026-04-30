@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCS Archive - Student Vault</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="brand">
+            <i class=""></i>
+            <span>CCS Archive</span>
+        </div>
+        <div class="user-profile">
+            <i class="fa-solid fa-circle-user profile-icon"></i>
+            <span class="user-role">Student</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <nav>
+                <ul>
+                    <li><a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+                    <li class="active"><a href="archive.html"><i class="fa-solid fa-box-archive"></i> Archive</a></li>
+                    <li><a href="upload.html"><i class="fa-solid fa-upload"></i> Upload</a></li>
+                </ul>
+            </nav>
+            <div class="logout-section">
+                <a href="login.html"><i class="fa-solid fa-right-from-bracket"></i> Log out</a>
+            </div>
+        </aside>
+
+        <main class="content">
+            <div class="search-container">
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" placeholder="Search">
+                </div>
+            </div>
+
+            <section class="featured-section">
+                <h2>My Archive</h2>
+                <p>All Files in your Archive</p>
+                <div class="archive-actions">
+                    <button class="btn btn-download"><i class="fa-solid fa-download"></i> Download Selection</button>
+                    <button class="btn btn-rename"><i class="fa-solid fa-pen"></i> Rename</button>
+                </div>
+                <div class="archive-display">
+                    <h3 class="empty-msg">No Files Uploaded</h3>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="SE.js"></script>
+</body>
+</html>

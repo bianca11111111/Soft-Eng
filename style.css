@@ -1,0 +1,571 @@
+:root {
+    --nav-bg: #d29b79;
+    --sidebar-bg: #ffffff;
+    --content-bg: #d9d9d9;
+    --active-tab: #f0c4ad;
+    --text-orange: #e87a2d;
+    --icon-grey: #555;
+    --page-bg: #d29b79;
+    --card-bg: #f5e7d9;
+    --primary-orange: #ff9a52;
+    --brand-orange: #ff9a52;
+    --border-color: #5a6d7a;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--page-bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Dashboard Layout */
+.navbar {
+    background-color: var(--nav-bg);
+    height: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    color: var(--text-orange);
+    font-weight: bold;
+    font-size: 1.2rem;
+    z-index: 10;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-img {
+    height: 40px;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-icon {
+    font-size: 35px;
+    color: black;
+}
+
+.container {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+.sidebar {
+    width: 200px;
+    background-color: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-top: 20px;
+    border-right: 1px solid #ddd;
+}
+
+.sidebar ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.sidebar li {
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar li a,
+.logout-section a {
+    text-decoration: none;
+    color: var(--text-orange);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+}
+
+.sidebar li i,
+.logout-section i {
+    font-size: 1.2rem;
+    color: var(--icon-grey);
+}
+
+.sidebar li.active {
+    background-color: var(--active-tab);
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+.logout-section {
+    padding: 30px 20px;
+}
+
+.content {
+    flex: 1;
+    background-color: var(--content-bg);
+    padding: 30px;
+    overflow: auto;
+}
+
+.search-container {
+    margin-bottom: 20px;
+}
+
+.search-bar {
+    background: white;
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 800px;
+}
+
+.search-bar i {
+    font-size: 1.5rem;
+    color: #888;
+    margin-right: 15px;
+}
+
+.search-bar input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 1.2rem;
+    background: transparent;
+}
+
+button,
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 18px;
+    background-color: var(--brand-orange);
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.25s ease, transform 0.15s ease;
+}
+
+button:hover,
+.btn:hover {
+    background-color: #f78d40;
+}
+
+.archive-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.archive-display {
+    background-color: white;
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    min-height: 180px;
+}
+
+.archive-display .empty-msg {
+    color: #555;
+    margin: 0;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #444;
+    font-weight: 600;
+}
+
+.input-group input[type="text"],
+.input-group input[type="file"] {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid #ccc;
+    background-color: white;
+    outline: none;
+    font-size: 1rem;
+}
+
+.input-group input[type="text"]:focus,
+.input-group input[type="file"]:focus {
+    border-color: var(--brand-orange);
+}
+
+.featured-section h2 {
+    margin-top: 30px;
+    color: #777;
+    font-weight: 400;
+}
+
+/* Login Page */
+.main-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    padding: 20px;
+    background-color: var(--page-bg);
+}
+
+.login-card {
+    background-color: var(--card-bg);
+    padding: 40px 50px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+}
+
+.header {
+    margin-bottom: 30px;
+}
+
+.logo-hexagon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #e67e22, #f39c12);
+    margin: 0 auto 15px;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.inner-cube {
+    width: 30px;
+    height: 30px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 8px;
+}
+
+.title {
+    color: var(--text-orange);
+    font-size: 26px;
+    letter-spacing: 2px;
+    margin: 0;
+    font-weight: 500;
+}
+
+.fieldset {
+    position: relative;
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.field-label {
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background-color: var(--card-bg);
+    padding: 0 8px;
+    font-size: 13px;
+    color: #444;
+    z-index: 1;
+}
+
+.login-card input {
+    width: 100%;
+    padding: 16px 25px;
+    border: 2px solid var(--border-color);
+    border-radius: 35px;
+    background: white;
+    font-size: 18px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.login-card input::placeholder {
+    color: #bbb;
+}
+
+.login-card input:focus {
+    border-color: var(--brand-orange);
+}
+
+.login-button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 35px;
+    background-color: var(--brand-orange);
+    color: white;
+    font-size: 22px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.1s;
+}
+
+.login-button:hover {
+    background-color: #f78d40;
+}
+
+.login-button:active {
+    transform: scale(0.98);
+}
+
+.footer-links {
+    margin-top: 20px;
+}
+
+.forgot-link {
+    display: inline-block;
+    color: #5c8ab3;
+    text-decoration: none;
+    font-size: 16px;
+}
+
+.forgot-link:hover {
+    text-decoration: underline;
+}
+
+/* --- Upload Page Styles --- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    display: flex;
+    height: 100vh;
+    background-color: #e0e0e0;
+}
+
+/* --- Top Navigation Bar --- */
+.top-nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 60px;
+    background-color: #d19a78;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 100;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    color: #723e22;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.logo-section img {
+    height: 40px;
+    margin-right: 10px;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    color: #723e22;
+    font-weight: bold;
+}
+
+.profile-icon {
+    background-color: black;
+    color: white;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 10px;
+}
+
+/* --- Sidebar Navigation --- */
+.sidebar {
+    width: 200px;
+    background-color: white;
+    padding-top: 80px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #ddd;
+}
+
+.nav-item {
+    padding: 15px 25px;
+    text-decoration: none;
+    color: #d19a78;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    transition: 0.3s;
+}
+
+.nav-item:hover {
+    background-color: #f9f0ea;
+}
+
+.nav-item.active {
+    background-color: #f0cbb5;
+    color: #723e22;
+}
+
+.logout {
+    margin-top: auto;
+    margin-bottom: 20px;
+}
+
+/* --- Main Content Area --- */
+.main-content {
+    flex-grow: 1;
+    padding: 100px 40px 40px 40px;
+}
+
+.content-header {
+    font-size: 1.5rem;
+    color: #333;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 10px;
+    margin-bottom: 30px;
+}
+
+/* --- Upload Box --- */
+.upload-container {
+    background-color: white;
+    border: 2px dashed #f08a5d;
+    border-radius: 15px;
+    padding: 40px;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.upload-icon {
+    width: 150px;
+    margin-bottom: 20px;
+}
+
+.upload-container p {
+    color: #666;
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+}
+
+.btn-upload {
+    background-color: #d36e3a;
+    color: white;
+    border: none;
+    padding: 10px 30px;
+    border-radius: 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-upload:hover {
+    background-color: #b55a2d;
+}
+
+/* --- Status Section --- */
+.status-box {
+    background-color: white;
+    border-radius: 15px;
+    padding: 60px;
+    text-align: center;
+    color: #999;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.content-box {
+    padding: 40px;
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.content-box h2 {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 30px;
+}
+
+.upload-area {
+    background-color: white;
+    border: 2px dashed #f08a5d;
+    border-radius: 15px;
+    padding: 40px;
+    margin: 0 auto 30px;
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    text-align: center;
+}
+
+.upload-icon-mock {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.drag-text {
+    color: #666;
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+}
+
+.upload-btn {
+    background-color: #d36e3a;
+    color: white;
+    border: none;
+    padding: 14px 40px;
+    border-radius: 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+    min-width: 220px;
+}
+
+.upload-btn:hover {
+    background-color: #b55a2d;
+}
+
+.empty-state {
+    background-color: white;
+    border-radius: 15px;
+    padding: 60px;
+    text-align: center;
+    color: #999;
+    font-size: 2rem;
+    font-weight: bold;
+}

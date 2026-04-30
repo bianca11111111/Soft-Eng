@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCS Archive - Student Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="brand">
+            <img src="logo.png" alt="Logo" class="logo-img"> <span>CCS Archive</span>
+        </div>
+        <div class="user-profile">
+            <i class="fa-solid fa-circle-user profile-icon"></i>
+            <span class="user-role">Student</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <nav>
+                <ul>
+                    <li class="active"><a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+                    <li><a href="archive.html"><i class="fa-solid fa-box-archive"></i> Archive</a></li>
+                    <li><a href="upload.html"><i class="fa-solid fa-upload"></i> Upload</a></li>
+                </ul>
+            </nav>
+            <div class="logout-section">
+                <a href="login.html"><i class="fa-solid fa-right-from-bracket"></i> Log out</a>
+            </div>
+        </aside>
+
+        <main class="content">
+            <div class="search-container">
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" placeholder="Search projects...">
+                </div>
+            </div>
+            
+            <section class="featured-section">
+                <h2>Featured Project</h2>
+            </section>
+        </main>
+    </div>
+
+    <script src="SE.js"></script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCS Archive - Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <header class="top-nav">
+        <div class="header-left">
+            <img src="Archive" alt="CCS Logo" class="nav-logo">
+            <span class="nav-title">CCS Archive</span>
+        </div>
+        <div class="profile-container">
+            <div class="profile-circle-white">
+                <i class="fa-solid fa-user user-icon-black"></i>
+            </div>
+            <span class="role-text-brown">Admin</span>
+        </div>
+    </header>
+
+    <div class="content-wrapper">
+        <aside class="sidebar">
+            <nav>
+                <ul>
+                    <li class="active"><a href="admin.html"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+                    <li><a href="gradebook.html"><i class="fa-solid fa-book"></i> Gradebook</a></li>
+                    <li><a href="feedback.html"><i class="fa-solid fa-comments"></i> Feedback</a></li>
+                </ul>
+            </nav>
+            <div class="logout-section">
+                <a href="#" onclick="showAdminLogout(); return false;"><i class="fa-solid fa-right-from-bracket"></i> Log out</a>
+            </div>
+        </aside>
+
+        <main class="dashboard-view">
+            <div class="search-container">
+                <div class="search-bar search-input-group">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" placeholder="Search projects...">
+                </div>
+            </div>
+            
+            <section class="featured-section">
+                <h2 class="featured-project-title">Featured Project</h2>
+            </section>
+        </main>
+    </div>
+
+    <!-- Admin Logout -->
+    <div class="admin-modal-overlay" id="adminLogoutModal">
+        <div class="admin-modal-card">
+            <div class="admin-modal-icon">?</div>
+            
+            <h2>Confirm Logout</h2>
+            <p>Are you sure you want to exit the application?</p>
+            
+            <div class="admin-modal-buttons">
+                <button class="admin-btn-logout" onclick="adminLogout()">Log Out Anyway</button>
+                <button class="admin-btn-cancel" onclick="closeAdminLogout()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="SE.js"></script>
+</body>
+</html>

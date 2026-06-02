@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="LOGO.png">
     <title>CCS Archive - Gradebook</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -72,26 +73,6 @@
         </div>
     </div>
 
-    <script>
-        function toggleDropdown() {
-            const list = document.getElementById("dropdownList");
-            list.classList.toggle("show");
-        }
-
-        function updateDecisionVisibility() {
-            const tableData = document.querySelector('.table-data-placeholder');
-            const decisionBox = document.querySelector('.decision-dropdown-placeholder');
-
-            
-            if (tableData.children.length > 0) {
-                decisionBox.classList.add('visible');
-            } else {
-                decisionBox.classList.remove('visible');
-            }
-        }
-
-        updateDecisionVisibility();
-    </script>
     <script src="SE.js"></script>
 </body>
 </html>

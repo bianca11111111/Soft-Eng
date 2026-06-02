@@ -1,0 +1,39 @@
+/*
+  Landing page stylesheet
+  -----------------------
+  This file is now linked by index.html so the landing page can be
+  designed and maintained separately from the global style.css.
+*/
+
+:root {
+    --brand-1: #c77f4e;
+    --brand-2: #5b341f;
+    --surface: #ffffff;
+    --line: #ebdccf;
+    --text-main: #3d2a1f;
+    --text-sub: #735746;
+}
+
+/* Base landing shell (safe defaults). */
+body.landing {
+    overflow-x: hidden;
+}
+
+.landing-wrap {
+    width: 100%;
+    max-width: 1140px;
+    margin: 0 auto;
+}
+
+/* Optional utility classes for future expansion. */
+.landing-section {
+    margin-top: 16px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.landing-title {
+    color: var(--brand-2);
+}

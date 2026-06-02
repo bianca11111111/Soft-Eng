@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="CCS Archive logo">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff9a52"/>
+      <stop offset="1" stop-color="#e87a2d"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="108" height="108" rx="26" fill="url(#g)"/>
+  <rect x="6" y="6" width="108" height="108" rx="26" fill="none" stroke="#723e22" stroke-width="3" opacity="0.35"/>
+  <g fill="#ffffff">
+    <rect x="34" y="40" width="52" height="10" rx="5"/>
+    <rect x="30" y="58" width="60" height="10" rx="5" opacity="0.92"/>
+    <rect x="38" y="76" width="44" height="10" rx="5" opacity="0.82"/>
+  </g>
+  <circle cx="60" cy="28" r="7" fill="#fff"/>
+</svg>

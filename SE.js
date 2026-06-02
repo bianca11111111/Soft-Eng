@@ -1,279 +1,351 @@
 // ============================================================
-// Firebase SDK (ESM via CDN)
-// NOTE:
-// Your HTML files currently include: <script src="SE.js"></script>
-// WITHOUT type="module". ES module imports require type="module".
-// Instead of modifying all HTML files, we will keep SE.js as a classic
-// script by dynamically importing the Firebase modules.
+//  CCS Archive — Front-end application logic
+//  Fully local: authentication + sessions via sessionStorage,
+//  project metadata via localStorage, file blobs via IndexedDB.
+//  No backend / Firebase required. Loaded as a classic script:
+//      <script src="SE.js"></script>
 // ============================================================
 
-let _firebase = null;
-async function getFirebase() {
-    if (_firebase) return _firebase;
+'use strict';
 
-    const [appMod, analyticsMod, authMod, fsMod, storageMod] = await Promise.all([
-        import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
-        import("https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js"),
-        import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"),
-        import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"),
-        import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js")
-    ]);
+// ── Config ───────────────────────────────────────────────────
+const ALLOWED_DOMAIN = '@gordoncollege.edu.ph';
+const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB per file
+const MAX_NAME_LEN = 120;
 
-    _firebase = {
-        initializeApp: appMod.initializeApp,
-        getAnalytics: analyticsMod.getAnalytics,
-        getAuth: authMod.getAuth,
-        signInWithEmailAndPassword: authMod.signInWithEmailAndPassword,
-        signOut: authMod.signOut,
-        onAuthStateChanged: authMod.onAuthStateChanged,
-        sendPasswordResetEmail: authMod.sendPasswordResetEmail,
-        getFirestore: fsMod.getFirestore,
-        collection: fsMod.collection,
-        addDoc: fsMod.addDoc,
-        getDocs: fsMod.getDocs,
-        getDoc: fsMod.getDoc,
-        doc: fsMod.doc,
-        updateDoc: fsMod.updateDoc,
-        deleteDoc: fsMod.deleteDoc,
-        query: fsMod.query,
-        where: fsMod.where,
-        orderBy: fsMod.orderBy,
-        serverTimestamp: fsMod.serverTimestamp,
-        getStorage: storageMod.getStorage,
-        ref: storageMod.ref,
-        uploadBytesResumable: storageMod.uploadBytesResumable,
-        getDownloadURL: storageMod.getDownloadURL,
-        deleteObject: storageMod.deleteObject
-    };
-
-    return _firebase;
-}
-
-
-// ── Firebase Config ──────────────────────────────────────────
-// Default config is set at runtime (student/admin). You must provide both configs.
-// These values must be replaced with your real Firebase project credentials.
-const STUDENT_FIREBASE_CONFIG = {
-    apiKey: "AIzaSyAzbkWbMPZcU1BgzzeprX4XKbesXl9Kowg",
-    authDomain: "app-dev-id-b4ae6.firebaseapp.com",
-    projectId: "app-dev-id-b4ae6",
-    storageBucket: "app-dev-id-b4ae6.firebasestorage.app",
-    messagingSenderId: "102198222058",
-    appId: "1:102198222058:web:4230eaccf55341f2ca0b93",
-    measurementId: "G-21QPT26KYC"
-};
-
-const ADMIN_FIREBASE_CONFIG = {
-    apiKey: "AIzaSyAzbkWbMPZcU1BgzzeprX4XKbesXl9Kowg",
-    authDomain: "app-dev-id-b4ae6.firebaseapp.com",
-    projectId: "app-dev-id-b4ae6",
-    storageBucket: "app-dev-id-b4ae6.firebasestorage.app",
-    messagingSenderId: "102198222058",
-    appId: "1:102198222058:web:4230eaccf55341f2ca0b93",
-    measurementId: "G-21QPT26KYC"
-};
-
-// Will be initialized after dynamic imports
-let initializeApp, getAnalytics, getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail;
-let getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, where, orderBy, serverTimestamp;
-let getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject;
-
-let auth, db, storage;
-
-function normalizePageName(page) {
-    return page
-        .toLowerCase()
-        .replace(/\.html$/, '')
-        .replace(/[\s_]+/g, '-');
-}
-
-function pickModeFromPage() {
-    const page = normalizePageName(window.location.pathname.split('/').pop());
-    // New folders/files requested:
-    // - student_login.html / student-login / student login.html
-    // - admin-login.html / admin login.html / admin_login.html
-    if (page.startsWith('admin-') || page === 'admin' || page === 'gradebook') return 'admin';
-    if (page.startsWith('student-') || page === 'student') return 'student';
-
-    // Backward compatibility for your existing pages:
-    if (page === 'admin') return 'admin';
-    if (page === 'gradebook') return 'admin';
-    return 'student';
-}
-
-function getConfigForMode(mode) {
-    return mode === 'admin' ? ADMIN_FIREBASE_CONFIG : STUDENT_FIREBASE_CONFIG;
-}
-
-async function initFirebase() {
-    // Firebase auth disabled - using local authentication only
-    // Pages will load without Firebase dependency
-    console.log('Local authentication mode - Firebase disabled');
-}
-
-
-// ── Expose helpers globally so inline onclick="" still works ──
-window.showLogoutModal  = showLogoutModal;
-window.closeLogoutModal = closeLogoutModal;
-window.showAdminLogout  = showAdminLogout;
-window.closeAdminLogout = closeAdminLogout;
-window.adminLogout      = adminLogout;
-window.logout           = logout;
-window.toggleDropdown   = toggleDropdown;
+const SESSION_KEY = 'ccs_session';
+const STORAGE_KEY = 'ccs_archive_projects';
+const DB_NAME = 'ccs_archive_db';
+const DB_VERSION = 1;
+const FILES_STORE = 'project_files';
 
 // ============================================================
-//  AUTH  ─ Login / Logout
+//  Small helpers
 // ============================================================
 
-/**
- * Unified login.
- * - Admin pages  → admin.html  (must be in Firebase Auth + role="admin" in Firestore users/{uid})
- * - Student pages → dashboard.html
- */
+function currentPage() {
+    return (window.location.pathname.split('/').pop() || '').toLowerCase();
+}
+
+function isAdminPage() {
+    return currentPage().includes('admin') || currentPage() === 'gradebook.html';
+}
+
 function normalizeEmail(email) {
-    const trimmed = (email || '').trim();
-    return trimmed.toLowerCase();
+    return (email || '').trim().toLowerCase();
 }
 
 function enforceAllowedDomain(email) {
     const e = normalizeEmail(email);
-    const domain = "@gordoncollege.edu.ph";
-    if (!e.endsWith(domain)) {
-        throw new Error(`Use your ${domain} email address.`);
+    if (!e.endsWith(ALLOWED_DOMAIN)) {
+        throw new Error(`Use your ${ALLOWED_DOMAIN} email address.`);
     }
     return e;
 }
 
-async function firebaseLogin(email, password) {
-    // Local authentication - Firebase removed
-    const allowedEmail = enforceAllowedDomain(email);
-    if (!password || password.length < 1) {
-        throw new Error('Password is required.');
-    }
-    // Accept any password, return mock user object
-    return { uid: 'local_' + Date.now(), email: allowedEmail };
-}
+/** Student ID: 4-digit year + 5-digit school ID (e.g. 202211535). Password = last 5 digits. */
+function parseStudentUsername(raw) {
+    const input = (raw || '').trim().toLowerCase();
+    if (!input) throw new Error('Student ID is required.');
 
-async function getUserRole(uid) {
-    // Firebase removed - return student role by default
-    // No role restrictions - all users can access all pages
-    return "student";
-}
-
-async function logout() {
-    // Firebase removed - simple redirect
-    window.location.href = "login.html";
-}
-
-async function adminLogout() {
-    // Firebase removed - simple redirect
-    window.location.href = "admin-login.html";
-}
-
-/** Forgot-password email */
-async function sendPasswordReset(email) {
-    // Firebase password reset disabled
-    throw new Error('Password reset is disabled.');
-}
-
-function getLoginPage(adminOnly = false) {
-    return adminOnly ? "admin-login.html" : "login.html";
-}
-
-// ── Auth state guard ─────────────────────────────────────────
-// FIREBASE AUTH DISABLED - All pages load freely
-function requireAuth(adminOnly = false) {
-    // No authentication required - pages load without auth
-    return;
-}
-
-// ============================================================
-//  LOCAL STORAGE  ─ Project Persistence (localStorage + IndexedDB)
-// ============================================================
-
-const STORAGE_KEY = 'ccs_archive_projects';
-const DB_NAME = 'ccs_archive_db';
-const FILES_STORE = 'project_files';
-let db_instance = null;
-
-// Initialize IndexedDB for file storage
-function initIndexedDB() {
-    return new Promise((resolve, reject) => {
-        if (db_instance) {
-            resolve(db_instance);
-            return;
+    let studentId;
+    if (input.includes('@')) {
+        const local = input.split('@')[0];
+        if (!input.endsWith(ALLOWED_DOMAIN)) {
+            throw new Error(`Use your school email (${ALLOWED_DOMAIN}) or enter your 9-digit student ID.`);
         }
-        const request = indexedDB.open(DB_NAME, 1);
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => {
-            db_instance = request.result;
-            resolve(db_instance);
+        studentId = local;
+    } else {
+        studentId = input;
+    }
+
+    if (!/^\d{9}$/.test(studentId)) {
+        throw new Error('Student ID must be 9 digits: 4-digit year + 5-digit school ID (e.g. 202211535).');
+    }
+
+    const year = studentId.slice(0, 4);
+    const schoolId = studentId.slice(4);
+    const yearNum = parseInt(year, 10);
+    if (yearNum < 2000 || yearNum > 2099) {
+        throw new Error('The first 4 digits must be a valid enrollment year (e.g. 2022).');
+    }
+
+    return {
+        studentId,
+        year,
+        schoolId,
+        email: studentId + ALLOWED_DOMAIN
+    };
+}
+
+function validateStudentLogin(username, password) {
+    const parsed = parseStudentUsername(username);
+    const pass = (password || '').trim();
+
+    if (!pass) throw new Error('Password is required.');
+    if (!/^\d{5}$/.test(pass)) {
+        throw new Error('Password must be your 5-digit school ID (last 5 digits of your student number).');
+    }
+    if (pass !== parsed.schoolId) {
+        throw new Error('Incorrect password. Use the last 5 digits of your student ID.');
+    }
+
+    return parsed;
+}
+
+/** Admin username: lastname.firstname (e.g. armada.arnie). Password = same name. */
+function parseAdminUsername(raw) {
+    const input = (raw || '').trim().toLowerCase();
+    if (!input) throw new Error('Username is required.');
+
+    let adminName;
+    if (input.includes('@')) {
+        if (!input.endsWith(ALLOWED_DOMAIN)) {
+            throw new Error(`Use your ${ALLOWED_DOMAIN} email or enter your username (e.g. lastname.firstname).`);
+        }
+        adminName = input.split('@')[0];
+    } else {
+        adminName = input;
+    }
+
+    if (!/^[a-z0-9]+\.[a-z0-9]+$/.test(adminName)) {
+        throw new Error('Username must be lastname.firstname format (e.g. armada.arnie).');
+    }
+
+    return {
+        adminName,
+        email: adminName + ALLOWED_DOMAIN
+    };
+}
+
+function validateAdminLogin(username, password) {
+    const parsed = parseAdminUsername(username);
+    const pass = (password || '').trim().toLowerCase();
+
+    if (!pass) throw new Error('Password is required.');
+    if (pass !== parsed.adminName) {
+        throw new Error('Incorrect password. Password must match your username (e.g. armada.arnie).');
+    }
+
+    return parsed;
+}
+
+function escapeHtml(str) {
+    return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatBytes(bytes) {
+    if (!bytes && bytes !== 0) return '';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let i = 0, n = bytes;
+    while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+    return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
+}
+
+function formatDate(iso) {
+    try {
+        return new Date(iso).toLocaleDateString(undefined, {
+            year: 'numeric', month: 'short', day: 'numeric'
+        });
+    } catch {
+        return '';
+    }
+}
+
+function fileIcon(type, name) {
+    const t = (type || '') + ' ' + (name || '');
+    if (/pdf/i.test(t)) return 'fa-file-pdf';
+    if (/zip|rar|7z|tar|gz/i.test(t)) return 'fa-file-zipper';
+    if (/image|png|jpe?g|gif|svg|webp/i.test(t)) return 'fa-file-image';
+    if (/word|doc/i.test(t)) return 'fa-file-word';
+    if (/excel|sheet|xls|csv/i.test(t)) return 'fa-file-excel';
+    if (/powerpoint|presentation|ppt/i.test(t)) return 'fa-file-powerpoint';
+    if (/text|txt|json|js|ts|html|css|md/i.test(t)) return 'fa-file-code';
+    return 'fa-file';
+}
+
+// ============================================================
+//  Toast notifications (replaces most alert() calls)
+// ============================================================
+
+function showToast(message, type = 'info', timeout = 3200) {
+    let host = document.getElementById('toastHost');
+    if (!host) {
+        host = document.createElement('div');
+        host.id = 'toastHost';
+        host.className = 'toast-host';
+        document.body.appendChild(host);
+    }
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    const icon = type === 'success' ? 'fa-circle-check'
+        : type === 'error' ? 'fa-circle-exclamation'
+            : 'fa-circle-info';
+    el.innerHTML = `<i class="fa-solid ${icon}"></i><span>${escapeHtml(message)}</span>`;
+    host.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 300);
+    }, timeout);
+}
+
+// ============================================================
+//  Session / Authentication (local only)
+// ============================================================
+
+function getSession() {
+    try {
+        return JSON.parse(sessionStorage.getItem(SESSION_KEY));
+    } catch {
+        return null;
+    }
+}
+
+function setSession(session) {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+function clearSession() {
+    sessionStorage.removeItem(SESSION_KEY);
+}
+
+function localLogin(username, password, role) {
+    if (role === 'admin') {
+        const parsed = validateAdminLogin(username, password);
+        const user = {
+            uid: 'admin_' + parsed.adminName,
+            email: parsed.email,
+            adminName: parsed.adminName,
+            name: parsed.adminName,
+            role: 'admin',
+            loginAt: new Date().toISOString()
         };
-        request.onupgradeneeded = (e) => {
+        setSession(user);
+        return user;
+    }
+
+    const parsed = validateStudentLogin(username, password);
+    const user = {
+        uid: 'student_' + parsed.studentId,
+        email: parsed.email,
+        studentId: parsed.studentId,
+        schoolId: parsed.schoolId,
+        year: parsed.year,
+        name: parsed.studentId,
+        role: 'student',
+        loginAt: new Date().toISOString()
+    };
+    setSession(user);
+    return user;
+}
+
+function logout() {
+    clearSession();
+    window.location.href = 'login.html';
+}
+
+function adminLogout() {
+    clearSession();
+    window.location.href = 'admin-login.html';
+}
+
+function sendPasswordReset() {
+    // No email backend in local mode. Surface a friendly message instead of failing.
+    showToast('This is a local demo — ask an admin to reset your password.', 'info', 4000);
+    return Promise.resolve();
+}
+
+/** Auth guard. Redirects to the appropriate login page when not authorized. */
+function requireAuth(adminOnly = false) {
+    const session = getSession();
+    if (!session) {
+        window.location.href = adminOnly ? 'admin-login.html' : 'login.html';
+        return false;
+    }
+    if (adminOnly && session.role !== 'admin') {
+        window.location.href = 'admin-login.html';
+        return false;
+    }
+    return true;
+}
+
+// ============================================================
+//  IndexedDB — file blob storage
+// ============================================================
+
+let _dbPromise = null;
+
+function openDB() {
+    if (_dbPromise) return _dbPromise;
+    _dbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
             const db = e.target.result;
             if (!db.objectStoreNames.contains(FILES_STORE)) {
                 db.createObjectStore(FILES_STORE, { keyPath: 'id' });
             }
         };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+    return _dbPromise;
+}
+
+async function storeFile(id, dataURL) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(FILES_STORE, 'readwrite');
+        tx.objectStore(FILES_STORE).put({ id, data: dataURL });
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
     });
 }
 
-// Store file in IndexedDB
-async function storeFile(fileId, fileData) {
-    try {
-        const idb = await initIndexedDB();
-        const tx = idb.transaction(FILES_STORE, 'readwrite');
-        const store = tx.objectStore(FILES_STORE);
-        store.put({ id: fileId, data: fileData });
-        return new Promise((resolve, reject) => {
-            tx.oncomplete = () => resolve(true);
-            tx.onerror = () => reject(tx.error);
-        });
-    } catch (e) {
-        console.error('Error storing file:', e);
-        return false;
-    }
+async function retrieveFile(id) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(FILES_STORE, 'readonly');
+        const req = tx.objectStore(FILES_STORE).get(id);
+        req.onsuccess = () => resolve(req.result ? req.result.data : null);
+        req.onerror = () => reject(req.error);
+    });
 }
 
-// Retrieve file from IndexedDB
-async function retrieveFile(fileId) {
-    try {
-        const idb = await initIndexedDB();
-        const tx = idb.transaction(FILES_STORE, 'readonly');
-        const store = tx.objectStore(FILES_STORE);
-        const request = store.get(fileId);
-        return new Promise((resolve, reject) => {
-            request.onsuccess = () => resolve(request.result?.data || null);
-            request.onerror = () => reject(request.error);
-        });
-    } catch (e) {
-        console.error('Error retrieving file:', e);
-        return null;
-    }
+async function deleteFile(id) {
+    const db = await openDB();
+    return new Promise((resolve) => {
+        const tx = db.transaction(FILES_STORE, 'readwrite');
+        tx.objectStore(FILES_STORE).delete(id);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+    });
 }
 
-// Delete file from IndexedDB
-async function deleteFile(fileId) {
-    try {
-        const idb = await initIndexedDB();
-        const tx = idb.transaction(FILES_STORE, 'readwrite');
-        const store = tx.objectStore(FILES_STORE);
-        store.delete(fileId);
-        return new Promise((resolve) => {
-            tx.oncomplete = () => resolve(true);
-        });
-    } catch (e) {
-        console.error('Error deleting file:', e);
-        return false;
-    }
+function dataURLtoBlob(dataURL) {
+    const [meta, b64] = dataURL.split(',');
+    const mime = (meta.match(/:(.*?);/) || [])[1] || 'application/octet-stream';
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
 }
+
+// ============================================================
+//  Project persistence (metadata in localStorage)
+// ============================================================
 
 function getStoredProjects() {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
         return stored ? JSON.parse(stored) : [];
     } catch (e) {
-        console.error('Error reading projects from storage:', e);
+        console.error('Error reading projects:', e);
         return [];
     }
 }
@@ -283,219 +355,230 @@ function saveStoredProjects(projects) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
         return true;
     } catch (e) {
-        console.error('Error saving projects to storage:', e);
+        console.error('Error saving projects:', e);
+        showToast('Could not save — browser storage may be full.', 'error');
         return false;
     }
 }
 
-
-// ============================================================
-//  FIRESTORE CRUD  ─ Projects
-// ============================================================
-
-/** Create a project document (called after file upload) */
-async function createProject({ name, fileURL, fileName, storagePath }) {
+function createProject({ name, fileName, fileType, fileSize }) {
+    const session = getSession();
     const projects = getStoredProjects();
-    const projectId = 'proj_' + Date.now();
-    const newProject = {
-        id: projectId,
+    const project = {
+        id: 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
         name,
-        fileURL,
         fileName,
-        storagePath,
-        ownerId: 'local_user',
-        ownerEmail: 'user@gordoncollege.edu.ph',
+        fileType: fileType || '',
+        fileSize: fileSize || 0,
+        ownerId: session ? session.uid : 'unknown',
+        ownerEmail: session ? session.email : 'unknown',
         status: 'pending',
         createdAt: new Date().toISOString()
     };
-    projects.push(newProject);
+    projects.push(project);
     saveStoredProjects(projects);
-    return newProject;
+    return project;
 }
 
-/** Read all projects for the current student */
-async function getMyProjects() {
+function getMyProjects() {
+    const session = getSession();
     const projects = getStoredProjects();
-    // Return all projects (without user filtering since local mode)
-    return projects;
+    if (!session || session.role === 'admin') return projects;
+    return projects.filter(p => p.ownerEmail === session.email);
 }
 
-/** Read ALL projects (admin only) */
-async function getAllProjects() {
-    const projects = getStoredProjects();
-    // Return all projects for admin view
-    return projects;
+function getAllProjects() {
+    return getStoredProjects();
 }
 
-/** Update a project's name */
-async function renameProject(projectId, newName) {
+function renameProject(projectId, newName) {
     const projects = getStoredProjects();
     const project = projects.find(p => p.id === projectId);
     if (project) {
         project.name = newName;
         saveStoredProjects(projects);
     }
-    return Promise.resolve();
 }
 
-/** Update project decision (admin) */
-async function setProjectDecision(projectId, decision) {
+function setProjectDecision(projectId, decision) {
     const projects = getStoredProjects();
     const project = projects.find(p => p.id === projectId);
     if (project) {
         project.status = decision;
         saveStoredProjects(projects);
     }
-    return Promise.resolve();
 }
 
-/** Delete a project document + its Storage file */
-async function deleteProject(projectId, storagePath) {
+async function deleteProject(projectId) {
     const projects = getStoredProjects();
-    const filtered = projects.filter(p => p.id !== projectId);
-    saveStoredProjects(filtered);
-    return Promise.resolve();
+    saveStoredProjects(projects.filter(p => p.id !== projectId));
+    await deleteFile(projectId);
 }
 
 // ============================================================
-//  STORAGE  ─ File Upload
+//  File upload (reads file, stores blob in IndexedDB)
 // ============================================================
 
-/**
- * Uploads a file to Firebase Storage and returns { fileURL, storagePath }.
- * @param {File}   file
- * @param {string} projectName
- * @param {function} onProgress  - called with 0-100 percent
- */
-function uploadFile(file, projectName, onProgress) {
+function readFileAsDataURL(file, onProgress) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => {
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += 25;
-                if (progress > 100) progress = 100;
-                if (onProgress) onProgress(progress);
-                if (progress >= 100) {
-                    clearInterval(interval);
-                    resolve({
-                        fileURL: reader.result,
-                        storagePath: 'local_' + Date.now(),
-                        fileName: file.name
-                    });
-                }
-            }, 150);
+        reader.onprogress = (e) => {
+            if (onProgress && e.lengthComputable) {
+                onProgress(Math.round((e.loaded / e.total) * 100));
+            }
         };
+        reader.onload = () => { if (onProgress) onProgress(100); resolve(reader.result); };
         reader.onerror = () => reject(new Error('Failed to read file'));
         reader.readAsDataURL(file);
     });
 }
 
 // ============================================================
-//  FIRESTORE CRUD  ─ Gradebook (Admin)
+//  File open / download (retrieves blob from IndexedDB)
 // ============================================================
 
-/** Admin sets a grade/decision on a project */
-async function upsertGrade(projectId, gradeData) {
-    // Firebase removed
-    return Promise.resolve();
+async function openProject(projectId) {
+    const dataURL = await retrieveFile(projectId);
+    if (!dataURL) { showToast('File data not found.', 'error'); return; }
+    const url = URL.createObjectURL(dataURLtoBlob(dataURL));
+    window.open(url, '_blank', 'noopener');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
-/** Get all grades (admin) */
-async function getAllGrades() {
-    // Firebase removed - return empty list
-    return [];
+async function downloadProject(projectId) {
+    const projects = getStoredProjects();
+    const project = projects.find(p => p.id === projectId);
+    const dataURL = await retrieveFile(projectId);
+    if (!dataURL) { showToast('File data not found.', 'error'); return; }
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = (project && project.fileName) || (project && project.name) || 'download';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 }
 
 // ============================================================
-//  UI  ─ Animations
+//  Demo data (helps test the app with one click)
 // ============================================================
 
-const loginCard       = document.querySelector('.login-card');
+async function seedDemoData() {
+    const session = getSession();
+    const samples = [
+        { name: 'Capstone — Library System', body: 'Demo documentation for the Library Management System capstone project.' },
+        { name: 'Thesis — IoT Weather Station', body: 'Abstract and chapters for the IoT Weather Station thesis.' },
+        { name: 'Final Project — POS App', body: 'Source overview and manual for the Point-of-Sale application.' }
+    ];
+    for (const s of samples) {
+        const dataURL = 'data:text/plain;base64,' + btoa(unescape(encodeURIComponent(s.body)));
+        const project = createProject({
+            name: s.name,
+            fileName: s.name.replace(/[^a-z0-9]+/gi, '_') + '.txt',
+            fileType: 'text/plain',
+            fileSize: s.body.length
+        });
+        await storeFile(project.id, dataURL);
+    }
+    showToast('Demo projects added.', 'success');
+    const page = currentPage();
+    if (page === 'archive.html') showArchive();
+    else if (page === 'admin.html') showAdminDashboard();
+    else showDashboard();
+}
+
+// ============================================================
+//  UI — content host + animations
+// ============================================================
+
+const loginCard = document.querySelector('.login-card');
 const dashboardSidebar = document.querySelector('.sidebar');
 
 function getDashboardContent() {
-    return document.querySelector('.content, .content-area, .dashboard-view');
+    return document.querySelector('.dashboard-view, .gradebook-view, .content, .content-area, main');
 }
 
 function animateEntry() {
-    if (!loginCard) return;
-    loginCard.classList.add('animate-entry');
+    if (loginCard) loginCard.classList.add('animate-entry');
 }
 
 function animateDashboard() {
     const sidebar = document.querySelector('.sidebar');
     const content = getDashboardContent();
     if (!content) return;
-
     if (sidebar) {
         sidebar.style.opacity = '0';
         sidebar.style.transform = 'translateX(-24px)';
     }
     content.style.opacity = '0';
     content.style.transform = 'translateY(10px)';
-
     requestAnimationFrame(() => {
         if (sidebar) {
-            sidebar.style.transition = 'opacity 0.55s ease-out, transform 0.55s ease-out';
+            sidebar.style.transition = 'opacity .55s ease-out, transform .55s ease-out';
             sidebar.style.opacity = '1';
             sidebar.style.transform = 'translateX(0)';
         }
-        content.style.transition = 'opacity 0.65s ease-out, transform 0.65s ease-out';
+        content.style.transition = 'opacity .65s ease-out, transform .65s ease-out';
         content.style.opacity = '1';
         content.style.transform = 'translateY(0)';
     });
 }
 
+function applyUserChrome() {
+    const session = getSession();
+    if (!session) return;
+    const roleText = document.querySelector('.role-text-brown');
+    if (roleText) roleText.title = session.email;
+}
+
 // ============================================================
-//  UI  ─ Dashboard / Archive / Upload views
+//  UI — Student dashboard / archive / upload
 // ============================================================
 
-async function showDashboard() {
-    const dashboardContent = getDashboardContent();
-    if (!dashboardContent) return;
-
-    dashboardContent.innerHTML = `
+function showDashboard() {
+    const host = getDashboardContent();
+    if (!host) return;
+    host.innerHTML = `
         <div class="search-container">
-            <div class="search-bar">
+            <div class="search-bar search-input-group">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" id="dashSearch" placeholder="Search projects...">
             </div>
         </div>
         <section class="featured-section">
-            <h2>Featured Project</h2>
-            <p>Find your most important works here.</p>
-            <div id="dashProjectList" class="archive-display"><div class="empty-state">Loading...</div></div>
+            <h2>My Projects</h2>
+            <p>All your uploaded projects and their review status.</p>
+            <div id="dashProjectList" class="archive-display"><div class="empty-state">Loading…</div></div>
         </section>`;
 
-    const projects = await getMyProjects();
-    renderProjectList("dashProjectList", projects);
+    const projects = getMyProjects();
+    renderProjectList('dashProjectList', projects);
 
-    document.getElementById("dashSearch").addEventListener("input", (e) => {
-        const q = e.target.value.toLowerCase();
-        const filtered = projects.filter(p => p.name.toLowerCase().includes(q));
-        renderProjectList("dashProjectList", filtered);
-    });
+    const search = document.getElementById('dashSearch');
+    if (search) {
+        search.addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase();
+            renderProjectList('dashProjectList', projects.filter(p => p.name.toLowerCase().includes(q)));
+        });
+    }
 }
 
-async function showArchive() {
-    const dashboardContent = getDashboardContent();
-    if (!dashboardContent) return;
-
-    dashboardContent.innerHTML = `
+function showArchive() {
+    const host = getDashboardContent();
+    if (!host) return;
+    host.innerHTML = `
         <section class="featured-section">
             <h2>Archived Projects</h2>
-            <p>Here you can view your uploaded projects.</p>
+            <p>Select projects to download, rename, or delete.</p>
             <div class="button-container">
-                <button class="btn btn-download"><i class="fa-solid fa-download"></i> Download Selection</button>
+                <button class="btn btn-download"><i class="fa-solid fa-download"></i> Download</button>
                 <button class="btn btn-rename"><i class="fa-solid fa-pen"></i> Rename</button>
-                <button class="btn btn-delete" style="background:#c0392b;color:#fff;"><i class="fa-solid fa-trash"></i> Delete</button>
+                <button class="btn btn-delete" style="background:#c0392b;"><i class="fa-solid fa-trash"></i> Delete</button>
             </div>
-            <div class="archive-display" id="archiveList"><div class="empty-state">Loading...</div></div>
+            <div class="archive-display" id="archiveList"><div class="empty-state">Loading…</div></div>
         </section>`;
 
-    const projects = await getMyProjects();
-    renderProjectList("archiveList", projects, true);
+    const projects = getMyProjects();
+    renderProjectList('archiveList', projects, true);
     setupArchiveHandlers(projects);
 }
 
@@ -504,262 +587,275 @@ function renderProjectList(containerId, projects, selectable = false) {
     if (!container) return;
 
     if (!projects.length) {
-        container.innerHTML = '<div class="empty-state">No Files Found</div>';
+        container.innerHTML = `
+            <div class="empty-state">
+                <div style="text-align:center">
+                    <p style="margin-bottom:14px">No projects yet.</p>
+                    <button class="btn" onclick="seedDemoData()"><i class="fa-solid fa-flask"></i> Load demo data</button>
+                </div>
+            </div>`;
         return;
     }
 
     container.innerHTML = projects.map(p => `
-        <div class="project-item" data-id="${p.id}" data-storage="${p.storagePath || ''}" data-name="${p.name}">
-            ${selectable ? `<input type="checkbox" class="project-check" data-id="${p.id}" data-storage="${p.storagePath || ''}">` : ''}
-            <span class="project-name">${p.name}</span>
-            <span class="project-status status-${p.status}">${p.status}</span>
-            <a class="project-link" href="${p.fileURL}" target="_blank" rel="noopener">
-                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open
-            </a>
+        <div class="project-item" data-id="${p.id}" data-name="${escapeHtml(p.name)}">
+            ${selectable ? `<input type="checkbox" class="project-check" data-id="${p.id}">` : ''}
+            <i class="fa-solid ${fileIcon(p.fileType, p.fileName)} project-icon"></i>
+            <div class="project-info">
+                <span class="project-name">${escapeHtml(p.name)}</span>
+                <span class="project-meta">${escapeHtml(p.fileName || '')} · ${formatBytes(p.fileSize)} · ${formatDate(p.createdAt)}</span>
+            </div>
+            <span class="project-status status-${escapeHtml(p.status)}">${escapeHtml(p.status)}</span>
+            <div class="project-actions">
+                <button class="icon-btn" data-action="open" data-id="${p.id}" title="Open"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+                <button class="icon-btn" data-action="download" data-id="${p.id}" title="Download"><i class="fa-solid fa-download"></i></button>
+            </div>
         </div>`).join('');
-}
 
-function setupArchiveHandlers(projects) {
-    const downloadBtn = document.querySelector('.btn-download');
-    const renameBtn   = document.querySelector('.btn-rename');
-    const deleteBtn   = document.querySelector('.btn-delete');
-
-    if (downloadBtn) {
-        downloadBtn.addEventListener('click', () => {
-            const checked = getCheckedItems();
-            if (!checked.length) { alert('Select at least one file to download.'); return; }
-            checked.forEach(item => {
-                const proj = projects.find(p => p.id === item.id);
-                if (proj) window.open(proj.fileURL, '_blank');
-            });
+    container.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            if (btn.dataset.action === 'open') openProject(id);
+            else downloadProject(id);
         });
-    }
-
-    if (renameBtn) {
-        renameBtn.addEventListener('click', async () => {
-            const checked = getCheckedItems();
-            if (checked.length !== 1) { alert('Select exactly one file to rename.'); return; }
-            const newName = prompt('Enter new project name:', checked[0].name);
-            if (!newName || !newName.trim()) return;
-            try {
-                await renameProject(checked[0].id, newName.trim());
-                await showArchive();
-            } catch (err) {
-                alert('Rename failed: ' + err.message);
-            }
-        });
-    }
-
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', async () => {
-            const checked = getCheckedItems();
-            if (!checked.length) { alert('Select at least one file to delete.'); return; }
-            if (!confirm(`Delete ${checked.length} project(s)? This cannot be undone.`)) return;
-            try {
-                await Promise.all(checked.map(item => deleteProject(item.id, item.storagePath)));
-                await showArchive();
-            } catch (err) {
-                alert('Delete failed: ' + err.message);
-            }
-        });
-    }
+    });
 }
 
 function getCheckedItems() {
     return Array.from(document.querySelectorAll('.project-check:checked')).map(cb => ({
         id: cb.dataset.id,
-        storagePath: cb.dataset.storage,
         name: cb.closest('.project-item')?.dataset.name || ''
     }));
 }
 
-function showUpload() {
-    const dashboardContent = getDashboardContent();
-    if (!dashboardContent) return;
+function setupArchiveHandlers(projects) {
+    const downloadBtn = document.querySelector('.btn-download');
+    const renameBtn = document.querySelector('.btn-rename');
+    const deleteBtn = document.querySelector('.btn-delete');
 
-    dashboardContent.innerHTML = `
+    if (downloadBtn) downloadBtn.addEventListener('click', () => {
+        const checked = getCheckedItems();
+        if (!checked.length) { showToast('Select at least one project to download.', 'error'); return; }
+        checked.forEach(item => downloadProject(item.id));
+    });
+
+    if (renameBtn) renameBtn.addEventListener('click', () => {
+        const checked = getCheckedItems();
+        if (checked.length !== 1) { showToast('Select exactly one project to rename.', 'error'); return; }
+        const newName = prompt('Enter new project name:', checked[0].name);
+        if (!newName || !newName.trim()) return;
+        if (newName.trim().length > MAX_NAME_LEN) { showToast(`Name must be ${MAX_NAME_LEN} characters or fewer.`, 'error'); return; }
+        renameProject(checked[0].id, newName.trim());
+        showToast('Project renamed.', 'success');
+        showArchive();
+    });
+
+    if (deleteBtn) deleteBtn.addEventListener('click', async () => {
+        const checked = getCheckedItems();
+        if (!checked.length) { showToast('Select at least one project to delete.', 'error'); return; }
+        if (!confirm(`Delete ${checked.length} project(s)? This cannot be undone.`)) return;
+        await Promise.all(checked.map(item => deleteProject(item.id)));
+        showToast('Deleted.', 'success');
+        showArchive();
+    });
+}
+
+function showUpload() {
+    const host = getDashboardContent();
+    if (!host) return;
+    host.innerHTML = `
         <section class="featured-section">
             <h2>Upload Project</h2>
-            <div class="input-group">
-                <label for="projectName">Project Name</label>
-                <input type="text" id="projectName" required>
+            <p>Add a project file to your archive. Max size ${formatBytes(MAX_FILE_BYTES)}.</p>
+            <div class="upload-form">
+                <div class="input-group">
+                    <label for="projectName">Project Name</label>
+                    <input type="text" id="projectName" maxlength="${MAX_NAME_LEN}" placeholder="e.g. Capstone — Inventory System">
+                </div>
+                <div class="input-group">
+                    <label for="projectFile">Project File</label>
+                    <input type="file" id="projectFile">
+                </div>
+                <div id="uploadProgress" style="display:none; margin:10px 0;">
+                    <progress id="progressBar" value="0" max="100" style="width:100%;"></progress>
+                    <span id="progressText">0%</span>
+                </div>
+                <p id="uploadMsg" style="min-height:20px;"></p>
+                <button id="uploadSubmitBtn" class="btn"><i class="fa-solid fa-upload"></i> Upload</button>
             </div>
-            <div class="input-group">
-                <label for="projectFile">Project File</label>
-                <input type="file" id="projectFile" required>
-            </div>
-            <div id="uploadProgress" style="display:none; margin:10px 0;">
-                <progress id="progressBar" value="0" max="100" style="width:100%;"></progress>
-                <span id="progressText">0%</span>
-            </div>
-            <p id="uploadMsg" style="min-height:20px;"></p>
-            <button id="uploadSubmitBtn" class="btn">Upload</button>
         </section>`;
 
     document.getElementById('uploadSubmitBtn').addEventListener('click', async () => {
         const nameInput = document.getElementById('projectName');
         const fileInput = document.getElementById('projectFile');
-        const msgEl     = document.getElementById('uploadMsg');
+        const msgEl = document.getElementById('uploadMsg');
         const progressWrap = document.getElementById('uploadProgress');
-        const progressBar  = document.getElementById('progressBar');
+        const progressBar = document.getElementById('progressBar');
         const progressText = document.getElementById('progressText');
-        const btn          = document.getElementById('uploadSubmitBtn');
+        const btn = document.getElementById('uploadSubmitBtn');
 
         const name = nameInput.value.trim();
         const file = fileInput.files[0];
 
-        if (!name || !file) {
-            msgEl.textContent = 'Please provide a project name and select a file.';
-            msgEl.style.color = '#d32f2f';
-            return;
-        }
+        const fail = (m) => { msgEl.textContent = m; msgEl.style.color = '#d32f2f'; };
+        msgEl.textContent = '';
+
+        if (!name) return fail('Please enter a project name.');
+        if (name.length > MAX_NAME_LEN) return fail(`Name must be ${MAX_NAME_LEN} characters or fewer.`);
+        if (!file) return fail('Please choose a file to upload.');
+        if (file.size > MAX_FILE_BYTES) return fail(`File is too large (max ${formatBytes(MAX_FILE_BYTES)}).`);
 
         btn.disabled = true;
         btn.textContent = 'Uploading…';
         progressWrap.style.display = 'block';
-        msgEl.textContent = '';
 
         try {
-            const { fileURL, storagePath, fileName } = await uploadFile(file, name, (pct) => {
+            const dataURL = await readFileAsDataURL(file, (pct) => {
                 progressBar.value = pct;
                 progressText.textContent = pct + '%';
             });
-
-            await createProject({ name, fileURL, fileName, storagePath });
+            const project = createProject({
+                name,
+                fileName: file.name,
+                fileType: file.type,
+                fileSize: file.size
+            });
+            await storeFile(project.id, dataURL);
 
             msgEl.textContent = 'Project uploaded successfully!';
             msgEl.style.color = '#2e7d32';
-            setTimeout(() => showDashboard(), 1200);
+            showToast('Project uploaded.', 'success');
+            setTimeout(() => showDashboard(), 1000);
         } catch (err) {
-            msgEl.textContent = 'Upload failed: ' + err.message;
-            msgEl.style.color = '#d32f2f';
+            fail('Upload failed: ' + err.message);
             btn.disabled = false;
-            btn.textContent = 'Upload';
+            btn.innerHTML = '<i class="fa-solid fa-upload"></i> Upload';
         }
     });
 }
 
 // ============================================================
-//  UI  ─ Admin Gradebook
+//  UI — Admin dashboard + gradebook
 // ============================================================
 
-async function loadGradebook() {
+function showAdminDashboard() {
+    const host = getDashboardContent();
+    if (!host) return;
+    const projects = getAllProjects();
+    const total = projects.length;
+    const pending = projects.filter(p => p.status === 'pending').length;
+    const approved = projects.filter(p => p.status === 'approved').length;
+    const rejected = projects.filter(p => p.status === 'rejected').length;
+    const recent = [...projects].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 5);
+
+    host.innerHTML = `
+        <section class="featured-section">
+            <h2>Admin Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card"><span class="stat-num">${total}</span><span class="stat-label">Total Projects</span></div>
+                <div class="stat-card"><span class="stat-num">${pending}</span><span class="stat-label">Pending</span></div>
+                <div class="stat-card"><span class="stat-num">${approved}</span><span class="stat-label">Approved</span></div>
+                <div class="stat-card"><span class="stat-num">${rejected}</span><span class="stat-label">Rejected</span></div>
+            </div>
+            <h2 style="margin-top:30px">Recent Submissions</h2>
+            <div id="adminRecent" class="archive-display"></div>
+            <div style="margin-top:16px"><a class="btn" href="gradebook.html"><i class="fa-solid fa-book"></i> Open Gradebook</a></div>
+        </section>`;
+
+    renderProjectList('adminRecent', recent);
+}
+
+function loadGradebook() {
     const tableData = document.querySelector('.table-data-placeholder');
     if (!tableData) return;
-
     tableData.innerHTML = '<p style="padding:12px">Loading…</p>';
 
     try {
-        const projects = await getAllProjects();
+        const projects = getAllProjects();
+        const decisionBox = document.querySelector('.decision-dropdown-placeholder');
+
         if (!projects.length) {
-            tableData.innerHTML = '';
+            tableData.innerHTML = '<p style="padding:12px;color:#777">No submissions yet.</p>';
+            if (decisionBox) decisionBox.classList.remove('visible');
             return;
         }
 
         tableData.innerHTML = projects.map(p => `
             <div class="table-row" data-id="${p.id}">
-                <span class="cell-student-id">${p.ownerEmail || p.ownerId}</span>
-                <span class="cell-project-title">${p.name}</span>
-                <span class="cell-doc-status">${p.status}</span>
+                <span class="cell-student-id">${escapeHtml(p.ownerEmail || p.ownerId)}</span>
+                <span class="cell-project-title">${escapeHtml(p.name)}</span>
+                <span class="cell-doc-status status-${escapeHtml(p.status)}">${escapeHtml(p.status)}</span>
                 <select class="decision-select" data-id="${p.id}">
-                    <option value="pending"   ${p.status === 'pending'   ? 'selected' : ''}>Pending</option>
-                    <option value="approved"  ${p.status === 'approved'  ? 'selected' : ''}>Approved</option>
-                    <option value="rejected"  ${p.status === 'rejected'  ? 'selected' : ''}>Rejected</option>
+                    <option value="pending"  ${p.status === 'pending' ? 'selected' : ''}>Pending</option>
+                    <option value="approved" ${p.status === 'approved' ? 'selected' : ''}>Approved</option>
+                    <option value="rejected" ${p.status === 'rejected' ? 'selected' : ''}>Rejected</option>
                 </select>
             </div>`).join('');
 
-        // Decision dropdowns
         tableData.querySelectorAll('.decision-select').forEach(sel => {
-            sel.addEventListener('change', async (e) => {
-                const id  = e.target.dataset.id;
+            sel.addEventListener('change', (e) => {
+                const id = e.target.dataset.id;
                 const val = e.target.value;
-                try {
-                    await setProjectDecision(id, val);
-                    const row = e.target.closest('.table-row');
-                    if (row) row.querySelector('.cell-doc-status').textContent = val;
-                } catch (err) {
-                    alert('Failed to update decision: ' + err.message);
+                setProjectDecision(id, val);
+                const cell = e.target.closest('.table-row').querySelector('.cell-doc-status');
+                if (cell) {
+                    cell.textContent = val;
+                    cell.className = 'cell-doc-status status-' + val;
                 }
+                showToast('Decision updated.', 'success');
             });
         });
 
-        // Show decision box if rows exist
-        const decisionBox = document.querySelector('.decision-dropdown-placeholder');
         if (decisionBox) decisionBox.classList.add('visible');
-
     } catch (err) {
-        tableData.innerHTML = `<p style="color:#c0392b;padding:12px">Error: ${err.message}</p>`;
+        tableData.innerHTML = `<p style="color:#c0392b;padding:12px">Error: ${escapeHtml(err.message)}</p>`;
     }
 }
 
 // ============================================================
-//  UI  ─ Navigation / Active item
+//  UI — Navigation highlight + page routing
 // ============================================================
 
-function setActiveNavItem(link) {
-    if (!dashboardSidebar || !link) return;
-    const activeItem = dashboardSidebar.querySelector('li.active, a.active');
-    if (activeItem) activeItem.classList.remove('active');
-    const parentLi = link.closest('li');
-    if (parentLi) parentLi.classList.add('active');
-    else link.classList.add('active');
+function highlightActiveNav() {
+    if (!dashboardSidebar) return;
+    const page = currentPage();
+    const link = dashboardSidebar.querySelector(`a[href="${page}"]`);
+    if (!link) return;
+    dashboardSidebar.querySelectorAll('li.active').forEach(li => li.classList.remove('active'));
+    const li = link.closest('li');
+    if (li) li.classList.add('active');
 }
 
 function setupDashboard() {
-    const dashboardContent = getDashboardContent();
-    if (!dashboardContent) return;
+    const host = getDashboardContent();
+    if (!host || loginCard) return; // skip on login pages
 
     animateDashboard();
-    if (!dashboardSidebar) return;
+    highlightActiveNav();
+    applyUserChrome();
 
-    const navLinks = dashboardSidebar.querySelectorAll('a');
-    navLinks.forEach((link) => {
-        link.addEventListener('click', (e) => {
-            const targetPage = link.getAttribute('href');
-            const currentPage = window.location.pathname.split('/').pop().toLowerCase();
-
-            if (targetPage && targetPage.toLowerCase() === currentPage) {
-                e.preventDefault();
-                const text = link.textContent.trim().toLowerCase();
-                if (text.includes('dashboard')) { showDashboard(); setActiveNavItem(link); }
-                else if (text.includes('archive')) { showArchive(); setActiveNavItem(link); }
-                else if (text.includes('upload')) { showUpload(); setActiveNavItem(link); }
-                else if (text.includes('log out') || text.includes('logout')) { logout(); }
-            }
-        });
-    });
-
-    const currentPage = window.location.pathname.split('/').pop().toLowerCase();
-    const initialLink = dashboardSidebar.querySelector(`a[href="${currentPage}"]`) ||
-        Array.from(navLinks).find((link) => {
-            const text = link.textContent.trim().toLowerCase();
-            if (currentPage === 'dashboard.html') return text.includes('dashboard');
-            if (currentPage === 'archive.html')   return text.includes('archive');
-            if (currentPage === 'upload.html')    return text.includes('upload');
-            return false;
-        });
-    if (initialLink) setActiveNavItem(initialLink);
-
-    if (currentPage === 'archive.html') showArchive();
-    if (currentPage === 'gradebook.html') loadGradebook();
+    switch (currentPage()) {
+        case 'dashboard.html': showDashboard(); break;
+        case 'archive.html': showArchive(); break;
+        case 'upload.html': showUpload(); break;
+        case 'admin.html': showAdminDashboard(); break;
+        case 'gradebook.html': loadGradebook(); break;
+    }
 }
 
 // ============================================================
-//  UI  ─ Login form
+//  UI — Login form
 // ============================================================
 
 function createMessageElement(container) {
     let messageEl = container.querySelector('.login-message');
     if (messageEl) return messageEl;
-
     messageEl = document.createElement('p');
     messageEl.className = 'login-message';
-    messageEl.style.cssText = 'margin:0 0 20px;font-size:.95rem;min-height:22px;';
-
-    const form = container.querySelector('form');
-    if (form) container.insertBefore(messageEl, form);
+    messageEl.style.cssText = 'margin:0 0 16px;font-size:.95rem;min-height:22px;';
+    const firstField = container.querySelector('.input-field');
+    if (firstField) container.insertBefore(messageEl, firstField);
     else container.prepend(messageEl);
-
     return messageEl;
 }
 
@@ -767,7 +863,6 @@ function notifyLogin(messageEl, text, type) {
     if (!messageEl) return;
     messageEl.textContent = text;
     messageEl.style.color = type === 'error' ? '#d32f2f' : '#2e7d32';
-
     if (type === 'error' && loginCard) {
         loginCard.classList.add('shake-effect');
         setTimeout(() => loginCard.classList.remove('shake-effect'), 500);
@@ -777,39 +872,34 @@ function notifyLogin(messageEl, text, type) {
 function setupLogin() {
     if (!loginCard) return;
 
-    const form      = loginCard.querySelector('form');
-    const loginBtn  = loginCard.querySelector('button[type="submit"], .login-btn, .login-button');
+    const role = isAdminPage() ? 'admin' : 'student';
+    const form = loginCard.querySelector('form');
+    const loginBtn = loginCard.querySelector('button[type="submit"], .login-btn, .login-button');
     const messageEl = createMessageElement(loginCard);
     if (!loginBtn) return;
 
     animateEntry();
 
-    // Forgot Password link
     const forgotLink = document.querySelector('.forgot-link');
     if (forgotLink) {
-        forgotLink.addEventListener('click', async (e) => {
+        forgotLink.addEventListener('click', (e) => {
             e.preventDefault();
-            const emailInput = loginCard.querySelector('input[type="text"], input[type="email"]');
-            const email = emailInput ? emailInput.value.trim() : '';
-            try {
-                await sendPasswordReset(email);
-                notifyLogin(messageEl, 'Password reset email sent! Check your inbox.', 'success');
-            } catch (err) {
-                notifyLogin(messageEl, 'Reset failed: ' + err.message, 'error');
-            }
+            sendPasswordReset();
         });
     }
 
-    const submitHandler = async (e) => {
-        e.preventDefault();
-
+    const submitHandler = (e) => {
+        if (e) e.preventDefault();
         const emailEl = loginCard.querySelector('input[type="text"], input[type="email"]');
-        const passEl  = loginCard.querySelector('input[type="password"]');
-        const email   = emailEl ? emailEl.value.trim() : '';
-        const pass    = passEl  ? passEl.value.trim()  : '';
+        const passEl = loginCard.querySelector('input[type="password"]');
+        const email = emailEl ? emailEl.value.trim() : '';
+        const pass = passEl ? passEl.value.trim() : '';
 
         if (!email || !pass) {
-            notifyLogin(messageEl, 'Please enter both email and password.', 'error');
+            const missing = role === 'admin'
+                ? 'Please enter your username and password.'
+                : 'Please enter your student ID and password.';
+            notifyLogin(messageEl, missing, 'error');
             return;
         }
 
@@ -817,18 +907,10 @@ function setupLogin() {
         loginBtn.textContent = 'Logging in…';
 
         try {
-            const user = await firebaseLogin(email, pass);
-            const currentPage = window.location.pathname.split('/').pop().toLowerCase();
-
-            // Redirect based on current page
-            if (currentPage.includes('admin')) {
-                window.location.href = 'admin.html';
-            } else {
-                window.location.href = 'dashboard.html';
-            }
+            localLogin(email, pass, role);
+            window.location.href = role === 'admin' ? 'admin.html' : 'dashboard.html';
         } catch (err) {
-            let msg = 'Login failed: ' + (err.message || 'Unknown error');
-            notifyLogin(messageEl, msg, 'error');
+            notifyLogin(messageEl, err.message || 'Login failed.', 'error');
             loginBtn.disabled = false;
             loginBtn.textContent = 'Log in';
         }
@@ -836,10 +918,15 @@ function setupLogin() {
 
     if (form) form.addEventListener('submit', submitHandler);
     else loginBtn.addEventListener('click', submitHandler);
+
+    // Allow Enter key to submit even without a <form>
+    loginCard.querySelectorAll('input').forEach(inp => {
+        inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitHandler(e); });
+    });
 }
 
 // ============================================================
-//  UI  ─ Modals
+//  UI — Modals + dropdown
 // ============================================================
 
 function showLogoutModal() {
@@ -858,41 +945,40 @@ function closeAdminLogout() {
     const modal = document.getElementById('adminLogoutModal');
     if (modal) modal.style.display = 'none';
 }
+function toggleDropdown() {
+    const list = document.getElementById('dropdownList');
+    if (list) list.classList.toggle('show');
+}
 
-// Close modals on backdrop click
 document.addEventListener('click', (event) => {
     const logoutModal = document.getElementById('logoutModal');
     if (logoutModal && event.target === logoutModal) closeLogoutModal();
-    const adminModal  = document.getElementById('adminLogoutModal');
-    if (adminModal  && event.target === adminModal)  closeAdminLogout();
+    const adminModal = document.getElementById('adminLogoutModal');
+    if (adminModal && event.target === adminModal) closeAdminLogout();
 });
 
-function toggleDropdown() {
-    const list = document.getElementById("dropdownList");
-    if (list) list.classList.toggle("show");
-}
+// ── Expose helpers for inline onclick="" handlers ────────────
+window.showLogoutModal = showLogoutModal;
+window.closeLogoutModal = closeLogoutModal;
+window.showAdminLogout = showAdminLogout;
+window.closeAdminLogout = closeAdminLogout;
+window.adminLogout = adminLogout;
+window.logout = logout;
+window.toggleDropdown = toggleDropdown;
+window.seedDemoData = seedDemoData;
 
 // ============================================================
 //  Bootstrap
 // ============================================================
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // Ensure Firebase is ready before using auth/firestore/storage.
-    try {
-        await initFirebase();
-    } catch (e) {
-        console.error('Firebase init failed:', e);
-        // Still allow login page to render errors.
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    const page = currentPage();
+    const protectedStudent = ['dashboard.html', 'archive.html', 'upload.html'];
+    const protectedAdmin = ['admin.html', 'gradebook.html'];
+
+    if (protectedStudent.includes(page) && !requireAuth(false)) return;
+    if (protectedAdmin.includes(page) && !requireAuth(true)) return;
 
     setupLogin();
     setupDashboard();
-
-    // Auth guard — protect dashboard/archive/upload/admin pages
-    const page = window.location.pathname.split('/').pop().toLowerCase();
-    const protectedStudent = ['dashboard.html', 'archive.html', 'upload.html'];
-    const protectedAdmin   = ['admin.html', 'gradebook.html'];
-
-    if (protectedStudent.includes(page)) requireAuth(false);
-    if (protectedAdmin.includes(page))   requireAuth(true);
 });

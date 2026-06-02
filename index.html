@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="LOGO.png">
+    <title>CCS Archive - Home</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="landing.css">
+    <style>
+        :root {
+            --brand-1: #c77f4e;
+            --brand-2: #5b341f;
+            --surface: #ffffff;
+            --line: #ebdccf;
+            --text-main: #3d2a1f;
+            --text-sub: #735746;
+        }
+        body.landing {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(165deg, #f7eee7 0%, #f1dfd2 50%, #ecd4c3 100%);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+        .landing-wrap {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 22px 20px 48px;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 14px;
+            border: 1px solid rgba(91, 52, 31, 0.14);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.74);
+            backdrop-filter: blur(3px);
+        }
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 11px;
+            font-weight: 700;
+            color: var(--brand-2);
+        }
+        .brand img {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            box-shadow: 0 6px 14px rgba(91, 52, 31, 0.2);
+        }
+        .quick-links {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .quick-links a {
+            color: var(--brand-2);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.92rem;
+            padding: 8px 12px;
+            border-radius: 9px;
+            border: 1px solid rgba(91, 52, 31, 0.2);
+            background: #fff;
+        }
+        .quick-links a:hover {
+            background: #fff6ef;
+        }
+        .hero {
+            position: relative;
+            overflow: hidden;
+            margin-top: 16px;
+            background:
+                linear-gradient(rgba(74, 49, 36, 0.78), rgba(74, 49, 36, 0.78)),
+                radial-gradient(circle at 25% 20%, rgba(255,255,255,0.12), transparent 40%),
+                linear-gradient(120deg, #7f5c48, #5c3d2d);
+            border-radius: 20px;
+            padding: 44px 36px;
+            box-shadow: 0 20px 44px rgba(44, 28, 20, 0.2);
+            color: #fff;
+        }
+        .hero::after {
+            content: "";
+            position: absolute;
+            right: -12px;
+            bottom: -12px;
+            width: 220px;
+            height: 220px;
+            background: url('LOGO.png') center/contain no-repeat;
+            opacity: 0.09;
+            pointer-events: none;
+        }
+        .hero-kicker {
+            font-size: 0.85rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            opacity: 0.92;
+            margin-bottom: 10px;
+        }
+        .hero h1 {
+            margin: 0 0 8px;
+            font-size: clamp(1.65rem, 2.7vw, 2.3rem);
+            line-height: 1.24;
+        }
+        .hero p {
+            margin: 0;
+            max-width: 760px;
+            color: #f2e8e1;
+            line-height: 1.62;
+        }
+        .hero-cta {
+            margin-top: 22px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .hero-cta a {
+            text-decoration: none;
+            font-weight: 700;
+            border-radius: 11px;
+            padding: 11px 16px;
+            color: #fff;
+        }
+        .hero-cta .btn-student { background: #ff9a52; }
+        .hero-cta .btn-admin { background: #6b4632; }
+        .features {
+            margin-top: 18px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.05);
+        }
+        .section-panel {
+            margin-top: 16px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.05);
+        }
+        .section-head {
+            margin-bottom: 14px;
+        }
+        .section-head h2 {
+            margin: 0 0 6px;
+            color: var(--brand-2);
+            font-size: 1.25rem;
+        }
+        .section-head p {
+            margin: 0;
+            color: var(--text-sub);
+            font-size: 0.94rem;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+        }
+        .feature-card {
+            border: 1px solid #efe2d7;
+            border-radius: 12px;
+            background: #fffdfb;
+            padding: 14px;
+        }
+        .feature-card h3 {
+            margin: 0 0 8px;
+            color: #66422c;
+            font-size: 1rem;
+        }
+        .feature-card p {
+            margin: 0;
+            color: #7b5d4b;
+            font-size: 0.9rem;
+            line-height: 1.52;
+        }
+        .split-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 14px;
+        }
+        .mini-card {
+            border: 1px solid #efe2d7;
+            border-radius: 12px;
+            background: #fffdfb;
+            padding: 14px;
+        }
+        .mini-card h3 {
+            margin: 0 0 6px;
+            font-size: 1rem;
+            color: #66422c;
+        }
+        .mini-card p {
+            margin: 0;
+            color: #7b5d4b;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .list-check {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 8px;
+        }
+        .list-check li {
+            border: 1px solid #efe2d7;
+            border-radius: 10px;
+            background: #fffdfb;
+            padding: 10px 12px;
+            color: #715340;
+            font-size: 0.9rem;
+        }
+        .list-check li::before {
+            content: "✓ ";
+            color: #a45d2a;
+            font-weight: 700;
+        }
+        .timeline {
+            display: grid;
+            gap: 10px;
+        }
+        .timeline-step {
+            border: 1px solid #efe2d7;
+            border-radius: 12px;
+            background: #fffdfb;
+            padding: 12px 14px;
+        }
+        .timeline-step strong {
+            display: block;
+            color: #5b341f;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+        }
+        .timeline-step span {
+            color: #7b5d4b;
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 10px;
+        }
+        .metric {
+            background: linear-gradient(145deg, #fff, #fff8f2);
+            border: 1px solid #efdfd1;
+            border-radius: 12px;
+            padding: 12px;
+        }
+        .metric strong {
+            display: block;
+            color: #5b341f;
+            font-size: 1.15rem;
+            margin-bottom: 2px;
+        }
+        .metric span {
+            color: #7b5d4b;
+            font-size: 0.85rem;
+        }
+        .cta-band {
+            margin-top: 16px;
+            border-radius: 16px;
+            padding: 24px;
+            color: #fff;
+            background: linear-gradient(120deg, #6c4732, #4f3425);
+            box-shadow: 0 14px 32px rgba(44, 28, 20, 0.2);
+        }
+        .cta-band h2 {
+            margin: 0 0 8px;
+            font-size: 1.3rem;
+        }
+        .cta-band p {
+            margin: 0 0 14px;
+            color: #efe4db;
+            line-height: 1.5;
+        }
+        .cta-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .cta-actions a {
+            text-decoration: none;
+            color: #fff;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+        }
+        .help {
+            margin-top: 16px;
+            display: block;
+        }
+        .help-card {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        .help-card h3 {
+            margin: 0 0 8px;
+            color: var(--brand-2);
+            font-size: 1.05rem;
+        }
+        .help-card p {
+            margin: 0 0 12px;
+            color: var(--text-sub);
+            line-height: 1.55;
+            font-size: 0.92rem;
+        }
+        .help-card a {
+            color: #a45d2a;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .footer {
+            margin-top: 16px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 16px 18px;
+            display: grid;
+            gap: 8px;
+            color: var(--text-sub);
+            font-size: 0.9rem;
+        }
+        .footer strong { color: #5f3a25; }
+        @media (max-width: 880px) {
+            .hero {
+                padding: 34px 24px;
+            }
+            .split-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 620px) {
+            .landing-wrap {
+                padding: 14px 12px 30px;
+            }
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .quick-links {
+                width: 100%;
+            }
+            .quick-links a {
+                flex: 1 1 auto;
+                text-align: center;
+            }
+            .hero {
+                padding: 24px 16px;
+                border-radius: 14px;
+            }
+            .hero h1 {
+                font-size: 1.45rem;
+            }
+            .hero p {
+                font-size: 0.93rem;
+            }
+            .hero-cta {
+                flex-direction: column;
+            }
+            .hero-cta a {
+                width: 100%;
+                text-align: center;
+            }
+            .features,
+            .section-panel,
+            .help-card,
+            .footer {
+                padding: 14px;
+                border-radius: 12px;
+            }
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            .cta-actions {
+                flex-direction: column;
+            }
+            .cta-actions a {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body class="landing">
+    <div class="landing-wrap">
+        <header class="topbar">
+            <div class="brand">
+                <img src="LOGO.png" alt="CCS Seal">
+                <span>CCS Archive System</span>
+            </div>
+            <nav class="quick-links" aria-label="Quick Links">
+                <a href="login.html">Login as Student</a>
+                <a href="admin-login.html">Login as Admin</a>
+            </nav>
+        </header>
+
+        <main class="hero">
+            <div class="hero-kicker">Digital Records Platform</div>
+            <h1>Preserving Records, Empowering Communities</h1>
+            <p>
+                A unified archive system for organizing records, improving document retrieval, and
+                supporting secure, role-based workflows across institutional and community operations.
+            </p>
+            <div class="hero-cta">
+                <a class="btn-student" href="login.html">Login as Student</a>
+                <a class="btn-admin" href="admin-login.html">Login as Admin</a>
+            </div>
+        </main>
+
+        <section class="features">
+            <div class="section-head">
+                <h2>Feature Highlights</h2>
+                <p>Core capabilities of a complete archive website.</p>
+            </div>
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <h3>🔍 Search & Retrieve Records</h3>
+                    <p>Find documents quickly through searchable metadata, tags, and filtering tools.</p>
+                </article>
+                <article class="feature-card">
+                    <h3>📥 Upload & Categorize Documents</h3>
+                    <p>Store reports, forms, and files with structured categories for long-term organization.</p>
+                </article>
+                <article class="feature-card">
+                    <h3>📊 Analytics & Reports</h3>
+                    <p>Track archive usage, document trends, and reporting metrics for better decisions.</p>
+                </article>
+                <article class="feature-card">
+                    <h3>📱 QR Code Access</h3>
+                    <p>Enable quick entry points for community users and mobile-based record navigation.</p>
+                </article>
+                <article class="feature-card">
+                    <h3>🕵️ Secure & Role-Based Access</h3>
+                    <p>Define user roles, protect data access, and support accountability through audit-ready flows.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section-panel">
+            <div class="section-head">
+                <h2>Archive Workflow Overview</h2>
+                <p>From submission to long-term retention with clear accountability.</p>
+            </div>
+            <div class="split-grid">
+                <div class="timeline">
+                    <div class="timeline-step">
+                        <strong>Step 1 — Intake & Submission</strong>
+                        <span>Documents are submitted through designated user roles with required metadata fields and file validation.</span>
+                    </div>
+                    <div class="timeline-step">
+                        <strong>Step 2 — Classification & Tagging</strong>
+                        <span>Records are categorized by type, department, date, and operational tags for easier indexing and search.</span>
+                    </div>
+                    <div class="timeline-step">
+                        <strong>Step 3 — Review & Decisioning</strong>
+                        <span>Authorized reviewers validate content, set status decisions, and maintain traceable change history.</span>
+                    </div>
+                    <div class="timeline-step">
+                        <strong>Step 4 — Archive & Access</strong>
+                        <span>Approved records are retained securely and remain searchable, downloadable, and auditable.</span>
+                    </div>
+                </div>
+                <ul class="list-check">
+                    <li>Version-aware records lifecycle management</li>
+                    <li>Soft delete and restore safeguards</li>
+                    <li>Batch download and export-ready structure</li>
+                    <li>Role-driven visibility and permission boundaries</li>
+                    <li>Mobile-friendly access for field and office users</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="section-panel">
+            <div class="section-head">
+                <h2>Analytics, Security, and Compliance</h2>
+                <p>Designed to support institutional governance and data privacy requirements.</p>
+            </div>
+            <div class="split-grid">
+                <div class="mini-card">
+                    <h3>Operational Intelligence</h3>
+                    <p>Usage dashboards and reports can help identify retrieval trends, document volume growth, and review bottlenecks.</p>
+                    <div class="metrics-grid" style="margin-top:10px;">
+                        <div class="metric"><strong>Real-Time</strong><span>Status visibility</span></div>
+                        <div class="metric"><strong>Audit-Ready</strong><span>Tracked access logs</span></div>
+                        <div class="metric"><strong>Structured</strong><span>Metadata indexing</span></div>
+                    </div>
+                </div>
+                <div class="mini-card">
+                    <h3>Security & Policy Controls</h3>
+                    <p>Archive operations are aligned with controlled access, protected storage practices, and privacy-conscious record handling.</p>
+                    <ul class="list-check" style="margin-top:10px;">
+                        <li>Access monitoring with user-level traceability</li>
+                        <li>Retention and data handling policy support</li>
+                        <li>Institutional branding and authenticity markers</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="help" class="help">
+            <article class="help-card">
+                <h3>📖 Tutorials / Help</h3>
+                <p>
+                    New users can follow an onboarding flow that covers login, record upload,
+                    document search, and approval workflows.
+                </p>
+                <a href="#">Open “How to Use the Archive” Guide</a>
+            </article>
+        </section>
+
+        <section class="cta-band">
+            <h2>Build a More Reliable Community Archive</h2>
+            <p>
+                Establish a modern records portal that supports transparent workflows,
+                fast retrieval, and long-term preservation for academic and community operations.
+            </p>
+            <div class="cta-actions">
+                <a href="login.html">Start as Student</a>
+                <a href="admin-login.html">Proceed as Admin</a>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <div><strong>Contact:</strong> School IT Team / Records Office</div>
+            <div><strong>Policy:</strong> Privacy & Data Protection Notice</div>
+            <div><strong>Version:</strong> CCS Archive v1.0</div>
+        </footer>
+    </div>
+</body>
+</html>
